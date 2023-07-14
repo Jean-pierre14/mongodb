@@ -1,13 +1,17 @@
 const http = require("http"),
   querystring = require("querystring"),
-  fs = require("fs");
-// express = require("express");
+  fs = require("fs"),
+  EventEmitter = require("events"),
+  express = require("express");
 
-// const app = express();
+const app = express();
 
 const PORT = process.env.PORT || 7000;
 
-// app.get("/", respondJson);
+const chatEmitter = new EventEmitter();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 function respondEcho(req, res) {
   const { input = "" } = querystring.parse(
@@ -53,7 +57,35 @@ const Server = http.createServer((req, res) => {
   NotFound(req, res);
 });
 
-Server.listen(PORT, (err) => {
+app.get("/", respondJson);
+app.get("/static/*", respondStatic);
+app.get("/chat", responseChat);
+
+function responseChat(req, res) {
+  const { message } = req.body;
+
+  chatEmitter.emit("message", message);
+  chatEmitter.on("message", console.log(message));
+
+  res.end();
+}
+
+app.get("/sse", responseSse);
+function responseSse(req, res) {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    Connection: "keep-alive",
+  });
+
+  const onMessage = (msg) => res.write(`data: ${msg}\n\n`);
+  chatEmitter.on("message", onMessage);
+
+  res.on("close", function () {
+    chatEmitter.off("message", onMessage);
+  });
+}
+
+app.listen(PORT, (err) => {
   if (err) throw err;
   console.log(`Server run on port: http://localhost:${PORT}`);
 });
