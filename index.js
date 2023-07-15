@@ -68,8 +68,36 @@ function responseChat(req, res) {
   const { message } = querystring.parse(req.url.split("?").slice(1).join(""));
 
   chatEmitter.emit("message", message);
-  chatEmitter.on("message", console.log);
+  // chatEmitter.on("message", console.log);
+  logChatMessage(message);
 
+  // To log messages
+  function logChatMessage(message) {
+    fs.appendFile("chatLog.txt", message + "\n", (err) => {
+      if (err) console.error("Error writing to chat log:", err);
+    });
+  }
+
+  function getPreviousMessages(callback) {
+    fs.readFile("chatLog.txt", "utf8", (error, data) => {
+      if (error) {
+        console.error("Error reading chat log:", error);
+        callback([]);
+      } else {
+        const messages = data.trim().split("\n");
+        callback(messages);
+      }
+    });
+  }
+  getPreviousMessages((messages) => {
+    // console.log(messages);
+    // const messageJson = JSON.stringify(messages);
+    // console.log(messageJson);
+
+    messages.forEach((message) => {
+      console.log(message);
+    });
+  });
   res.end();
 }
 
