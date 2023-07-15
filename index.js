@@ -40,14 +40,17 @@ function respondText(req, res) {
   res.setHeader("Content-Type", "text/plain");
   res.end("Hi text");
 }
+
 function respondJson(req, res) {
   res.setHeader("Content-Type", "application/json");
   res.end(JSON.stringify({ text: "hi", numbers: [1, 2, 3, 4] }));
 }
+
 function NotFound(req, res) {
   res.writeHead(404, { "Content-Type": "text/plain" });
   res.end("Not found");
 }
+
 const Server = http.createServer((req, res) => {
   if (req.url === "/") return respondText(req, res);
   if (req.url === "/json") return respondJson(req, res);
@@ -62,22 +65,23 @@ app.get("/static/*", respondStatic);
 app.get("/chat", responseChat);
 
 function responseChat(req, res) {
-  const { message } = req.body;
+  const { message } = querystring.parse(req.url.split("?").slice(1).join(""));
 
   chatEmitter.emit("message", message);
-  chatEmitter.on("message", console.log(message));
+  chatEmitter.on("message", console.log);
 
   res.end();
 }
 
 app.get("/sse", responseSse);
+
 function responseSse(req, res) {
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     Connection: "keep-alive",
   });
 
-  const onMessage = (msg) => res.write(`data: ${msg}\n\n`);
+  const onMessage = async (msg) => await res.write(`data: ${msg}\n\n`);
   chatEmitter.on("message", onMessage);
 
   res.on("close", function () {

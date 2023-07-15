@@ -1,12 +1,16 @@
-new window.EventSource("/sse").onmessage = function (event) {
-  window.messages.innerHTML += `<p>${event.data}</p>`;
-};
-
-// alert("Code"); Test the JS path
-
-window.FormData.addEventListener("submit", function (event) {
+document.getElementById("myForm").addEventListener("submit", function (event) {
   event.preventDefault();
 
   window.fetch(`/chat?message=${window.input.value}`);
+  console.log(window.input.value);
   window.input.value = "";
 });
+
+const messagesElement = document.getElementById("messages");
+const eventSource = new EventSource("/sse");
+
+eventSource.onmessage = function (event) {
+  const messageElement = document.createElement("p");
+  messageElement.textContent = event.data;
+  messagesElement.appendChild(messageElement);
+};
